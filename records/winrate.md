@@ -114,3 +114,5 @@
 - **native 验收双败：side0 [1,10]、side1 [7,0]**——进攻被防御压力扼杀，几乎不出拳
 - **结论：进攻性与耐打性此消彼长，-8 恰在激进点；H2b（双 KO native）仍为最优，防御优化此路不通**
 - 改动已留档分支，master 已回退
+
+- **处置：final-candidate / current-best 切换至 H2b 谱系**（boxing-h2b.onnx，validate PASS/4.75ms，<50MB）；待平台提交

@@ -281,3 +281,4 @@ cat /mnt/workspace/.remote-access/post_boot_receipt.txt
 - native 验收**双败**：side0 [1,10]、side1 [7,0]——进攻性被防御压力扼杀
 - **结论：当前奖励结构下进攻性与耐打性此消彼长；H2b（-8，双 KO native）保持在激进最优点上，仍为 final-candidate**
 - 本会话实验全部收官（H1–H4 + native 验证 + H5）；额度剩 ~24h；pod ~16:50 到期自动停止
+
