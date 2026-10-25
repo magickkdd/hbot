@@ -1,0 +1,19 @@
+== [1] bashrc env ==
+3
+== [2] train venv pip check ==
+No broken requirements found.
+== [3] train venv CUDA ==
+True NVIDIA A10
+== [4] eval validate ==
+VALIDATE_OK
+== [5] assets 49/49 ==
+  "manifest_sha256": "2d3d94599817738d77b903efb6784d63da698a417a380bdc79ac53e4ee238963"
+}
+== [6] onnx sha256 ==
+b0681976135eed572d1d20aefc52ec65c149bdc636f2594a6436fa7136a3fc86  /mnt/workspace/HoloMotion/models/holomotion-v2/exported/model_10500.onnx
+== [7] compiled files ==
+7
+== [8] GPU ==
+NVIDIA A10, 0 MiB
+== [9] interhuman raw ==
+/mnt/workspace/HoloMotion/holoboxing/data/raw/InterHuman/annots/: 1124.txt 1843.txt 4033.txt  /mnt/workspace/HoloMotion/holoboxing/data/raw/InterHuman/motions/: 1124.pkl 1843.pkl 4033.pkl 

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "supervised_samples": 11460,
+  "robot_h5_clips": 10,
+  "robot_h5_frames": 11538,
+  "maximum_rotation_basis_error": 5.066394805908203e-07,
+  "prepared_manifest_sha256": "3582d9d391fcc6bcaa4bd72d6c9a6531e2d7c4222777289e4261ec1ea06fc0e3",
+  "robot_manifest_sha256": "2dfab915efe24cad7de7737edef937d32bb258b3722eedb04c44ca4478970897",
+  "train_h5_manifest_sha256": "8b0f9357021ae6e6a0670b383c6e68b834d2ae1d93878dcd46bfe53aac992a1a",
+  "validation_h5_manifest_sha256": "5f94eb86673949c9f7bef0a8b9fec26bb29b37a0a939ee60ebc3e200b9f2f5c9",
+  "validation_scope": "file integrity, current boxing reader, actual HoloMotion V2 reader/FK and geometric basis; no tracking rollout",
+  "source_clips": 8,
+  "sources_sha256": "980256fbba24a56564952a0685603ca76e3ca7f05a80ea18834a883f7884e571",
+  "conversion": "measured"
+}

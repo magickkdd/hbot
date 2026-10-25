@@ -1,0 +1,11 @@
+# 循环赛逐局
+- rr-1: results/boxing-b1.onnx vs results/boxing-p1.onnx -> 0:0 (TIME)
+- rr-2: results/boxing-b1.onnx vs results/boxing-p2.onnx -> 0:0 (TIME)
+- rr-3: results/boxing-p1.onnx vs results/boxing-b1.onnx -> 0:0 (TIME)
+- rr-4: results/boxing-p1.onnx vs results/boxing-p2.onnx -> 0:0 (TIME)
+- rr-5: results/boxing-p2.onnx vs results/boxing-b1.onnx -> 0:0 (TIME)
+- rr-6: results/boxing-p2.onnx vs results/boxing-p1.onnx -> 0:0 (TIME)
+
+胜场: results/boxing-b1.onnx=0, results/boxing-p1.onnx=0, results/boxing-p2.onnx=0
+无单独冠军（全平/并列）→ 保守取基线
+champion: results/boxing-b1.onnx

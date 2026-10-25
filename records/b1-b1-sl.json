@@ -1,0 +1,19 @@
+{
+  "checkpoint": "/mnt/workspace/HoloMotion/results/b1-sl/epoch_000019.pt",
+  "checkpoint_sha256": "9c48cffeedf134b27ad036d38f61dd21b3906691d53d9c0f6829692ddaf33cd5",
+  "checkpoint_bytes": 4872595,
+  "progress": {
+    "epochs_completed": 19,
+    "next_batch": 0,
+    "steps": 19
+  },
+  "budget": {
+    "max_runtime_seconds": 5400.0,
+    "max_training_seconds": null,
+    "save_reserve_seconds": 600,
+    "checkpoint_interval_seconds": 300,
+    "runtime_seconds": 36.448924500495195,
+    "longest_update_seconds": 0.3337060771882534,
+    "stop_reason": "requested_progress_complete"
+  }
+}

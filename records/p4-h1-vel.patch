@@ -1,0 +1,15 @@
+diff --git a/holoboxing/training/envs/mujoco_rewards.py b/holoboxing/training/envs/mujoco_rewards.py
+index cd5bd16..3a47569 100644
+--- a/holoboxing/training/envs/mujoco_rewards.py
++++ b/holoboxing/training/envs/mujoco_rewards.py
+@@ -88,8 +88,8 @@ def terms(agent):
+             dict(
+                 asset_cfg=own,
+                 target_body_name="torso_link",
+-                sigma=0.25,
+-                tar_speed=1.0,
++                sigma=0.5,
++                tar_speed=0.5,
+             ),
+         ),
+         (

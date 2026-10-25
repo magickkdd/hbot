@@ -1,0 +1,12 @@
+# 第三方官方克隆（1.7G，含许可数据，不 redistributed）
+official/
+# 授权数据下载暂存（SMPL/InterHuman/RoboStriker —— 非商业研究用途，禁止再分发）
+incoming/
+# 机器本地状态（连接脚本自动生成）
+deployment/.ts_ip
+# 模型 checkpoint（大文件，可由 NAS checkpoint 续训复现；ONNX 最终产物除外）
+models/*.pt
+*.pkl
+*.hdf5
+__pycache__/
+.zcode/

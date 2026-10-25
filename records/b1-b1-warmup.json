@@ -1,0 +1,19 @@
+{
+  "checkpoint": "/mnt/workspace/HoloMotion/results/b1-warmup/model_32.pt",
+  "checkpoint_sha256": "91036dcc2bc7b8af3f19cb3e1cccc2e3ce16803deff41cf3ce5b2e90f0d16e63",
+  "checkpoint_bytes": 16960531,
+  "progress": {
+    "requested_updates": 32,
+    "completed_updates": 32,
+    "total_updates": 32
+  },
+  "budget": {
+    "max_runtime_seconds": 5400.0,
+    "max_training_seconds": null,
+    "save_reserve_seconds": 600,
+    "checkpoint_interval_seconds": 300,
+    "runtime_seconds": 171.61543671227992,
+    "longest_update_seconds": 4.199251119047403,
+    "stop_reason": "requested_progress_complete"
+  }
+}

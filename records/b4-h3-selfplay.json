@@ -1,0 +1,19 @@
+{
+  "checkpoint": "/mnt/workspace/HoloMotion/results/h3-selfplay/model_512.pt",
+  "checkpoint_sha256": "41bdf847d7914e6d00af9427af76df7d8c0c01a3397efca27f87a4c83b62a27e",
+  "checkpoint_bytes": 35409969,
+  "progress": {
+    "requested_updates": 512,
+    "completed_updates": 512,
+    "total_updates": 512
+  },
+  "budget": {
+    "max_runtime_seconds": 5400.0,
+    "max_training_seconds": null,
+    "save_reserve_seconds": 600,
+    "checkpoint_interval_seconds": 300,
+    "runtime_seconds": 1973.6412435807288,
+    "longest_update_seconds": 4.226987008005381,
+    "stop_reason": "requested_progress_complete"
+  }
+}

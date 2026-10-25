@@ -1,0 +1,38 @@
+POST_BOOT Sun Oct 25 00:34:45 CST 2026
+RECEIPT: IP=100.78.127.38 UP_RC=0 HOST=hbot-dsw Sun Oct 25 00:34:28 CST 2026
+repo=OK
+onnx_bytes=1647887681
+py311=OK
+train_venv=OK
+eval_env=OK
+bootstrap_rc=0 verify_rc=0
+PASS repo present
+PASS training venv
+PASS conda py311
+PASS eval env
+PASS env.sh
+PASS tmux
+PASS rsync
+PASS tailscale binary
+PASS sshd binary
+PASS sshd listening 2223
+PASS onnx size 1647887681
+PASS onnx sha256
+PASS assets manifest
+PASS training torch cuda
+PASS eval validate --help
+PASS compiled observations
+PASS InterHuman clip 1124
+PASS InterHuman clip 1843
+PASS InterHuman clip 4033
+INFO InterHuman split/train.txt pending (user upload)
+INFO InterHuman split/val.txt pending (user upload)
+INFO InterHuman split/test.txt pending (user upload)
+INFO InterHuman LICENSE.md pending (user upload)
+INFO RoboStriker files=0
+INFO SMPL neutral pending
+--- disk ---
+0596c4a877-ude94.cn-hangzhou.nas.aliyuncs.com:/6ee4a1f7-0199-4110-83df-fac321404edc/  1.0P   29T  996T   3% /mnt/workspace
+VERIFY_PASS=19 VERIFY_FAIL=0
+VERIFY_DONE
+POST_BOOT_DONE

@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-25T06:09:21.570301+00:00",
+  "status": "PASS",
+  "actual_fps": 214.337047089905,
+  "qualification_mode": "local",
+  "status_scope": "local interface and runtime compatibility",
+  "format_check": {
+    "expected": "valid self-contained ONNX",
+    "status": "PASS"
+  },
+  "size_check": {
+    "expected": "strictly <50,000,000 bytes",
+    "status": "PASS",
+    "total_bytes": 2359996,
+    "limit_bytes_exclusive": 50000000
+  },
+  "contract_check": {
+    "expected": "holomotion_v2_boxing_obs1097_target_pose225_v1",
+    "status": "PASS",
+    "input_shape": [
+      1,
+      1097
+    ],
+    "output_shape": [
+      1,
+      225
+    ],
+    "history_frames": 10,
+    "frame_offsets": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "source_hashes": {
+      "reference_schema": "a7c6204f85332a384469ffd30325b03d56399e044e510cab2b0556eae1cc42c1",
+      "link_observation": "73fde837113ee92caad0065c0f684ba985d473c6713b7f6217f2f2894bde44e7",
+      "link_actor_packing": "bfb9a21cd75640e845687730e72b416a13ad24612674f3d7c71c8a63925fe4b5"
+    },
+    "output_sanitization": {
+      "nonfinite_components": 0,
+      "orientation_fallback_slots": 0
+    }
+  },
+  "execution_provider": "CUDAExecutionProvider",
+  "error_code": "",
+  "error_reason": "",
+  "lower_controller": {
+    "version": "2.0_link_10500",
+    "command_mode": "VR-5",
+    "model_path": "/mnt/workspace/HoloMotion/models/holomotion-v2/exported/model_10500.onnx"
+  },
+  "chain_benchmark": {
+    "version": "upper_lower_completed_mean5ms_v1",
+    "scope": "single_fighter_upper_observation_inference_decode_lower_observation_inference_cache_target; excludes_output_sanitization_and_physics",
+    "warmup": 10,
+    "iterations": 100,
+    "mean_ms": 4.665549019999999,
+    "p50_ms": 4.6587285000000005,
+    "p95_ms": 4.7080528,
+    "p99_ms": 4.735636160000001,
+    "maximum_ms": 4.904942,
+    "sanitizer_mean_ms": 0.12618126999999998,
+    "threshold_ms": 5.0,
+    "criterion": "mean_ms <= 5.0; individual tails are diagnostic",
+    "passed": true,
+    "timing_completed": true,
+    "fps": 214.337047089905,
+    "gpu": "NVIDIA A10",
+    "torch_version": null,
+    "tensor_runtime": "Warp + ONNX Runtime",
+    "warp_version": "1.11.0",
+    "cuda_version": "12.8.90",
+    "onnxruntime_version": "1.22.0",
+    "gpu_telemetry_before": {
+      "fields": "index,uuid,name,driver_version,pstate,utilization.gpu,memory.used,memory.total,clocks.current.sm,clocks.current.memory,power.draw",
+      "rows": [
+        "0, GPU-c0700360-34b5-36ad-de32-7bdc544ad429, NVIDIA A10, 550.54.15, P0, 4, 4445, 23028, 1695, 6250, 71.96"
+      ],
+      "units": "utilization percent; memory MiB; clocks MHz; power W"
+    },
+    "gpu_telemetry_after": {
+      "fields": "index,uuid,name,driver_version,pstate,utilization.gpu,memory.used,memory.total,clocks.current.sm,clocks.current.memory,power.draw",
+      "rows": [
+        "0, GPU-c0700360-34b5-36ad-de32-7bdc544ad429, NVIDIA A10, 550.54.15, P0, 57, 4445, 23028, 1695, 6250, 73.56"
+      ],
+      "units": "utilization percent; memory MiB; clocks MHz; power W"
+    },
+    "parity_preflight": {
+      "steps": 5,
+      "observation_atol": 3e-05,
+      "observation_rtol": 3e-05,
+      "action_and_cache_atol": 1e-06,
+      "action_and_cache_rtol": 1e-06,
+      "max_observation_error": 5.960464477539063e-08,
+      "max_binding_action_error": 0.0,
+      "scope": "compiled observation CPU/CUDA parity; CUDA model feed/binding action and cache parity; canonical PyTorch/graph parity recorded at export"
+    },
+    "execution_provider": "CUDAExecutionProvider",
+    "platform": "Linux-5.10.134-17.3.al8.x86_64-x86_64-with-glibc2.35",
+    "upper_sha256": "0cc6082721993a543142ffc60cbe0297e5f48fc4bde0a7cd5bdaf2a574c5e065",
+    "lower_sha256": "b0681976135eed572d1d20aefc52ec65c149bdc636f2594a6436fa7136a3fc86",
+    "lower_version": "2.0_link_10500",
+    "model_config_sha256": "e8ad79d65bbe9fa030927dd7f32ef777e6ad8fea8ee825310920f438255f4e10",
+    "batch": 1,
+    "precision": "float32",
+    "fixture": "actual_scene_reset_pose_kinematics_only_no_physics_stepping",
+    "cache": "returned recurrent state; production reset at maximum context length",
+    "sanitization_components": 0,
+    "target_hardware_gate": "RTX 5090 initial round; S600 subsequent round; report GPU is actual hardware",
+    "required_gpu": "RTX 5090",
+    "target_hardware_match": false
+  },
+  "hardware_qualification": {
+    "measured_gpu": "NVIDIA A10",
+    "required_gpu": "RTX 5090",
+    "target_hardware_match": false,
+    "threshold_ms": 5.0,
+    "local_mean_within_budget": true,
+    "official_status": "NOT_EVALUATED",
+    "scope_notice": "These measurements describe this GPU and environment only. Official hardware qualification is not established. Latency cannot be translated by a fixed multiplier."
+  }
+}

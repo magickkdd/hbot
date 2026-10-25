@@ -1,0 +1,20 @@
+{
+  "checkpoint": "/mnt/workspace/HoloMotion/results/boxing-smoke-prior/last.pt",
+  "checkpoint_sha256": "9a135170eb2b744bef5a577158775e59fd78e532d23cfc2af5097683c5eab48a",
+  "checkpoint_bytes": 6161479,
+  "progress": {
+    "epochs_completed": 100,
+    "next_batch": 0,
+    "steps": 400,
+    "stop_reason": "requested_progress_complete"
+  },
+  "budget": {
+    "max_runtime_seconds": 1800.0,
+    "max_training_seconds": null,
+    "save_reserve_seconds": 600,
+    "checkpoint_interval_seconds": 300,
+    "runtime_seconds": 48.013853846117854,
+    "longest_update_seconds": 0.9864779245108366,
+    "stop_reason": "requested_progress_complete"
+  }
+}
