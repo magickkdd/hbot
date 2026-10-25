@@ -1,0 +1,16 @@
+{
+  "status": "COMPLETE",
+  "candidate_side": 0,
+  "initial_pose_mode": "official",
+  "candidate_runtime_backend": "published_compiled",
+  "candidate_sha256": "4c576bc41522c61971b589dfc10ba56bb52cc24812b3c3243c792d05da357e49",
+  "native_opponent_sha256": "9f8bb366cdb3fd9d2752d7f7aed67a7391d9ca58aadf361f0f569b35ed54f8bc",
+  "frames": 3000,
+  "score": [
+    1,
+    10
+  ],
+  "candidate_won": false,
+  "winner": 1,
+  "competition_qualification": false
+}

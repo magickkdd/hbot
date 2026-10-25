@@ -1,0 +1,13 @@
+diff --git a/holoboxing/training/envs/mujoco_rewards.py b/holoboxing/training/envs/mujoco_rewards.py
+index af1e296..2387dff 100644
+--- a/holoboxing/training/envs/mujoco_rewards.py
++++ b/holoboxing/training/envs/mujoco_rewards.py
+@@ -158,7 +158,7 @@ def terms(agent):
+         ),
+         (
+             "defensive_hit_penalty_punch",
+-            -8.0,
++            -24.0,
+             rewards.defensive_hit_penalty_punch,
+             dict(
+                 asset_cfg=own,

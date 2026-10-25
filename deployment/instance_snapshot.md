@@ -266,3 +266,18 @@ cat /mnt/workspace/.remote-access/post_boot_receipt.txt
 
 - 远程：`/mnt/workspace/HoloMotion`、`/mnt/workspace/.remote-access/`、`/mnt/workspace/.bootstrap/`、`/mnt/workspace/logs/`
 - 本地：`/home/czx/HBOT/deployment/{bootstrap_hbot.sh,post_boot.sh,verify_state.sh,cache_persistent.sh,connect_hbot.sh,.ts_ip,instance_snapshot.md}`、`/home/czx/HBOT/records/`
+
+## 17. ★ native 评测验证：H2b 双 KO 官方原生控制器（2026-10-25 15:05）
+
+- `model_3000.pt`（RoboStriker-Preview 官方 ckpt，18.8MB，sha256 `9f8bb366…`）经 api.github.com raw 端点就位 `/mnt/workspace/`（raw.githubusercontent 不通）
+- **H2b（boxing-h2b.onnx，f56fc9d8…）：side0 1000:5 KO（41s）、side1 19:1000 KO（93s）——双侧双 KO 胜**；挨 5/19 拳但零倒地
+- H4（H2b 重开新阶段 σ1.0）：0:16 / 17:0 双败——新阶段重置清空战斗行为
+- **final-candidate / current-best 切换至 H2b 谱系**；镜像 A/B 方法论作废（对 B1 永远 0:0），evaluate_native 为有效验收
+- 归档：records/native-{h2b,h4}-side{0,1}-result.json ×6
+
+## 18. H5 防御强化实验：负结果（2026-10-25 15:18–16:15）
+
+- 改动：defensive_hit_penalty -8→-24（跨码 --allow-resume-code-change 从 H2b 续训 512，分支 p4-h5-def@47e8726，patch `a0793feb…`）
+- native 验收**双败**：side0 [1,10]、side1 [7,0]——进攻性被防御压力扼杀
+- **结论：当前奖励结构下进攻性与耐打性此消彼长；H2b（-8，双 KO native）保持在激进最优点上，仍为 final-candidate**
+- 本会话实验全部收官（H1–H4 + native 验证 + H5）；额度剩 ~24h；pod ~16:50 到期自动停止

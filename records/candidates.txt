@@ -3,3 +3,4 @@ results/boxing-p1.onnx
 results/boxing-p2.onnx
 results/boxing-p4.onnx
 results/boxing-p2b.onnx
+results/boxing-h2b.onnx  # 2026-10-25 native双KO采纳, f56fc9d8…
