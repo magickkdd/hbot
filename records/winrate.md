@@ -91,3 +91,19 @@
 - **命中频率始终停留在 ~1e-4 奖励量级（每 update 摊薄后），从未达到能改变 60s 对局比分的行为密度**；对局帧遥测证实零接近迁移
 - 结构性瓶颈（下一轮主攻方向，均为更大的工程改动）：① 确定性对局与随机训练的行为迁移缺口（训练采样 vs 对局均值动作）；② 自对弈镜像均衡抑制接触（双方同步学会同一边缘策略）；③ 缺少「教师强制/课程」阶段（直接从零发现命中太难）
 - **最终模型维持 B1**（boxing-b1.onnx，e42e6f62…）：平台对手未知，B1 的「绝对不倒地」在 Elo 口径下仍是当前最优可提交物
+
+## evaluate_native：B1 vs 原生 RoboStriker（model_3000.pt，2026-10-25 14:54）
+- 首个外部对手数据点。model_3000.pt（18.8MB，sha256 9f8bb366…）已就位 /mnt/workspace/
+- side0（B1 红）：**0:1 负**，裁判判 native 胜；native 命中 1 次、B1 命中 0
+- side1（B1 蓝）：**0:0 平**，双方零命中
+- 两局均 TIME 结束、零倒地零 KO；B1 无法对原生控制器得分，native 具备真实攻击能力
+- 归档：records/native-side{0,1}-result.json
+
+## ★ evaluate_native 验证：H2b/H4 vs 原生 RoboStriker（2026-10-25 14:54–15:05）
+- **H2b（vel 重塑 + shaping 2.0 谱系，1280 updates）：双侧双 KO 胜！**
+  - side0：1000:5，H2b 41 秒 KNOCKDOWN→KO native（自身挨 5 拳，零倒地）
+  - side1：19:1000，native 19 次命中但 H2b 顶住反杀 KO（93s）
+  - 1000 = KO 固定奖励分；H2b 成为**首个能 KO 官方原生控制器的自训模型**
+- H4（从 H2b 重开新阶段 + σ1.0）：0:16 / 17:0 双败——**新阶段重置清空战斗行为**，印证行为链依附于连续训练谱系
+- **方法论修正：对 B1 的镜像 A/B（永远 0:0）无法区分「会打」与「不会打」，evaluate_native 才是有效验收。**
+- **处置：final-candidate / current-best 切换至 H2b 谱系**（boxing-h2b.onnx，validate PASS/4.75ms，<50MB）；待平台提交

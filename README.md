@@ -17,11 +17,13 @@
 | `records/` | 全部实验证据链：55 份验收/校验/对战/A-B 记录、补丁、计时、画像 |
 | `models/boxing-b1.onnx` | 当前最终候选模型（B1 基线，2.3MB，sha256 见 records/b1-checkpoint-hashes.txt） |
 
-## 项目状态（2026-10-25）
+## 项目状态（2026-10-25 晚）
 
-- **管线全绿**：PHASE0–PHASE3 全部验收通过；B1 基线 256 updates selfplay 复刻完成；validate `status=PASS` 且 `chain_benchmark=4.79ms`（≤5ms 判据）。
-- **改进探索**（H 系列）：6 个完整训练+判定闭环系统探测了奖励几何空间，行为链（接近→贴身→挥拳→命中）在训练侧逐环点亮（vel 激活 10×、命中首次非零），但确定性对局迁移未打通（详见 `records/winrate.md` H 系列总结）。
-- **下一方向**：① 训练/对局行为迁移（采样 vs 均值动作）；② 打破自对弈镜像均衡；③ 教师/课程命中阶段。
+- **管线全绿**：PHASE0–PHASE3 验收通过；B1 基线 256 updates 复刻完成（validate PASS、4.79ms）。
+- **突破（H 系列，2026-10-25）**：奖励重塑（vel_reward 重塑 + active_hit_shaping 门控放宽）后，**H2b 模型双侧 KO 官方原生 RoboStriker 控制器**（1000:5 与 19:1000）——首个会打、能 KO 原生对手的自训模型。当前最终候选 = `models/boxing-h2b.onnx`。
+- **方法论教训**：对不还手的 B1 做镜像 A/B 永远 0:0，无法区分「会打/不会打」；`evaluate_native`（对原生控制器）才是有效验收。
+- **未解问题**：命中频率仍低（挨 5–19 拳才 KO 对手）；训练行为→确定性对局的迁移机制待解决（见 `records/winrate.md`）。
+- 完整证据链见 `records/winrate.md` 与 `deployment/instance_snapshot.md`。
 
 ## 安全红线（摘自 PHASE0 附录 C）
 
