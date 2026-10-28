@@ -3,6 +3,7 @@
 > 建档：2026-10-24 · 最后更新：2026-10-25 01:00（Asia/Shanghai）
 > 执行：agent，按 PHASE0_SETUP.md v1.0
 > 免费额度剩余：单次会话约 7 小时、总额度 31.5 小时（用户口述，2026-10-25 01:14 时点）——后续额度核算基线
+> **额度更新（2026-10-25 晚，用户口述）：总剩余 16h，可开两次 8h 会话。**B5 按 2×8h 规划分两场（见 B5_EXECUTION.md）；实例 16:15 H5 结束后空闲自动关机（tailscale 17:0x 离线），下次开机走 post_boot 流程。
 
 ## 1. 连接
 
@@ -282,3 +283,20 @@ cat /mnt/workspace/.remote-access/post_boot_receipt.txt
 - **结论：当前奖励结构下进攻性与耐打性此消彼长；H2b（-8，双 KO native）保持在激进最优点上，仍为 final-candidate**
 - 本会话实验全部收官（H1–H4 + native 验证 + H5）；额度剩 ~24h；pod ~16:50 到期自动停止
 
+
+## 19. B5a2 4096 收官 + B7 全量数据（2026-10-25 23:00–）
+
+- B5a2 4096：4096/4096 完成（runtime 5709.8s），`results/b5a2-selfplay/model_4096.pt`（sha256 40e60083…）；export `results/boxing-b5a2-4096.onnx`，validate PASS / 4.84ms
+- B5a2 native 4 局：side0 0:11 双败（我方 0 命中、挨 11 拳）；side1 1000:1 双胜（对手 17.14s 自倒，距离 1.92m，我方 0 命中）→ **0 命中，不替换 final-candidate**
+- RoboStriker 全量 86 npz / 43 组已推送 `raw/RoboStriker_full`（86/86）
+- InterHuman 全量：官方 Drive 两端不可达；HF 镜像 `Hang19/Interhuman` motions.zip 561MB + annots.zip 3.4MB，逐文件 md5/size 与官方 listing 完全一致（7,810 motions / 7,897 annots）；128MB ×5 分块并行传输中
+- 设计：全量 7,810 → prior；拳击相关 1,411 → prepared/SL；官方 test（1,177 + 4033）留出；1 prior + 1 SL，19 epochs；无 RL
+- 规格：`B7_FULL_DATA_SL.md`；实测 retarget 热态 ≈190 帧/s，全量约 3–3.5h
+
+## 20. B7 数据准备收官 + B8 主规格（2026-10-26 03:00）
+
+- InterHuman 全量 7,810/7,897 校验通过；RoboStriker 86 npz；拳击 retarget 1,411/1,411。
+- prepared：官方 prepare 因 zero-row clip abort；`records/b7-prepare-skip.patch` 逐 clip 跳过；最终 **1,227 clip / 741,842 samples**（train 1,139 / 663,216；val 88 / 78,626）；11 个坏 clip 从 sources/manifest 排除；`Records` 校验通过；manifest sha256 `8a8d75fe…`。
+- B5a2 4096：validate PASS/4.84ms；native 4 局 0 命中；side0 0:11 负、side1 对手自倒胜；不替换 final-candidate。
+- 规格：`B8_ROBOSTRIKER_REPRO.md`（主规格）、`B7_FULL_DATA_SL.md`（数据前置）、`ROBOSTRIKER_REPRO_ASSESSMENT.md`（可行性附录）、`papers/`（论文 PDF/全文/要点）。
+- 本场结束：实例关机；`/mnt/workspace` 持久化保留 raw/converted/prepared/results；下一场从 B8 Stage II/III 继续。

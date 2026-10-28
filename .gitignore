@@ -4,6 +4,13 @@ official/
 incoming/
 # 机器本地状态（连接脚本自动生成）
 deployment/.ts_ip
+deployment/.ssheng_ip
+deployment/.ssheng_known_hosts
+# 内部交接文档（含开发机连接信息，不入库）
+AGENT_HANDOFF.md
+HANDOFF_*.md
+.trae/
+b8_workspace/
 # 模型 checkpoint（大文件，可由 NAS checkpoint 续训复现；ONNX 最终产物除外）
 models/*.pt
 *.pkl

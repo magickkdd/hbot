@@ -116,3 +116,53 @@
 - 改动已留档分支，master 已回退
 
 - **处置：final-candidate / current-best 切换至 H2b 谱系**（boxing-h2b.onnx，validate PASS/4.75ms，<50MB）；待平台提交
+
+## ★★ KO 归因翻案（2026-10-25 晚，用户视频观察 + match.json 帧证据）
+- **用户看 h2b-ko-side0.mp4 后指出：native（striker）是自己倒的，我方效果明显更差——观察成立，证据链如下**
+- 分数分解早已暗示：两局 H2b 得分均为 **1000 = KO 固定奖励分**，有效命中数 = **0**（side0 是我们挨 5 拳，side1 挨 19 拳）
+- side1（53.04s 倒地）：倒地瞬间 us-native 根部水平距离 **1.40m**（>臂展，物理上不可能由我方击倒）；前 2s native z=0.683 站立正常 → **纯自倒**
+- side0（21.68s 倒地）：倒地瞬间距离 0.59m，但我方零有效命中；距离 2s 内 0.96→0.82→0.59m（native 扑击逼近中）→ **大概率扑击失衡自倒**，我方推动贡献无证据
+- **H2b 真实画像修正：抗打不倒（两局 z_min 0.68/0.70，挨 19 拳不倒）+ 对 native 零进攻输出**；「首个能 KO 原生控制器」的说法作废，改为「两局皆因对手自倒而获胜（含运气成分）」
+- **候选维持 H2b**（vs B1 的 0:1 负 + 0:0 平仍占优：赢是赢，Elo 口径下对手自倒也是胜利）——但取胜依赖对手失误，强队模型不会白送
+- **对 B5 的含义：刀③（冲量对齐奖励）恰好补的就是「零真实命中」这一环，优先级结论不变且更紧迫**；另注意 model_3000 自身有平衡缺陷（60s 内两次自倒），平台对手若同源可能共享此弱点——抗打稳定在 Elo 口径下有真实价值
+
+## B5a2 4096 native 验收（2026-10-25 23:32–23:40，boxing-b5a2-4096.onnx，validate PASS/4.84ms）
+- 4 局对原生 RoboStriker：side0 0:11 双败；side1 1000:1 双胜（对手 17.14s 自倒，距离 1.92m，我方零命中）
+- 有效命中：**4 局我方全部 0 次**；side0 挨 11 拳，side1 仅挨 1 拳
+- 归因：side1 两局均为对手自倒；side0 无倒地、判分负
+- **结论：B5a2 4096 的 impulse 奖励在训练侧激活（mean 0.37），但未迁移为确定性对局命中；整体不优于 H2b（H2b side0 挨 5 拳后对手自倒，B5a2 side0 直接 0:11 判负）**
+- 处置：归档，不替换 final-candidate；B7 全量数据 SL 继续
+
+## B7 全量数据准备收官（2026-10-26 03:00）
+- InterHuman 全量：7,810 motions + 7,897 annots，逐文件 md5 与官方 listing 一致；RoboStriker 全量 86 npz / 43 组。
+- 拳击 retarget：1,411/1,411；pair XY 误差 2.5e-7；1124/1843/4033 与旧 converted 逐数组一致。
+- prepared：官方 prepare 遇 zero-row clip 整批 abort；补丁 `records/b7-prepare-skip.patch` 逐 clip 跳过；合并 **1,227 clip / 741,842 samples**（train 1,139 / 663,216；val 88 / 78,626）；11 个坏 clip：1630/2829/3546/4218/3272/7323/4938/4526/7053/7153/7302；`Records` loader 校验通过。
+- manifest sha256 `8a8d75fe…`；compiled 评价包已恢复；B5a2 4096 native 0 命中（见上）。
+- 下一场按 B8 主规格：Stage II state-conditioned prior → Stage III(a) warmup → Stage III(b) LS-NFSP；B7 generic retarget/full prior 后置。
+
+## B8 LS-NFSP 长跑（2026-10-27 → 10-28，results/b8-nfsp* model_8114）
+- 4,000 updates 分块续训（256 env，selfplay + LS-NFSP，对手池 8 / 刷新 32）：训练侧 impulse 奖励存在，但 native 四局 **我方 0 击中**。
+- 归因结论：**缺拳击参考动作**——冻结解码器下，策略只能从零摸索 225 维目标序列，探索效率过低。
+- 处置：停止 B8 长跑，改走「外部拳击动捕示范」路线（见下）。
+
+## B9 拳击动捕示范链（2026-10-28，CMU subject 13，方案见 B9_MIMIC_PIPELINE.md）
+- 数据：CMU MoCap **subject 13 = boxing**，42 段 AMC；自写 ASF/AMC 解析 + FK（Y-up→Z-up）+ MuJoCo 阻尼最小二乘 IK 重定向到 G1（`deployment/cmu_retarget.py`）。
+- 踩坑：`--freeze-lower`（锁下肢+根）后才稳定采到样本；完整重定向会让冻结控制器 2 秒摔倒、采集 0 样本；根高曾错用 `model.qpos0` 导致 -1.99m，改用 initial-state.json 站立 qpos。
+- prepared：**36,229 samples**（dataset `cmu-boxing`，`deployment/prep_b9.sh` + `build_sources.py`）。
+- 阶段01 先验重建误差 **6.4mm**；阶段02 BC **0.10m**；阶段03 站立热身 32；阶段04 自对弈短程。
+- native 四局：**我方 0 击中**，被击中 8/12/7 拳 → 学会抱架、不出拳。
+
+## B10/B11 补丁式尝试（2026-10-28）
+- B10：CMU 单角色 + 合成对手（站桩）；BC 误差略升，native 仍 **0 击中**，但挨打次数下降。
+- B11：改用拳击专用先验（阶段01 从零拟合）；native 仍 **0 击中**。
+- 归因：单角色示范里对手是合成的、几何不真；BC 闭环协变量偏移（训练对手固定，实战对手压上）。
+
+## B12 LAFAN1 真实双人对打（2026-10-28，当前主链）
+- 数据：Ubisoft **LAFAN1**（HF 镜像 `lvhaidong/LAFAN1_Retargeting_Dataset`，已重定向到 G1，30fps，CC BY-NC-ND 4.0）；取 3 段格斗（`fight1_s2_s3` / `fight1_s2_s5` / `fightSport1`），7,347 帧。
+- 合成双人：两份 CSV 各自已被归零到原点、yaw≈0（相对位姿丢失）→ 保持 A 不动，B 平移 +1.0m、绕 z 转 π（`deployment/lafan_pair.py`）。
+- prepared：**27,844 samples**（dataset `lafan-fight`，`deployment/prep_b12.sh`）。
+- 阶段01 先验：早停于第 81 轮，验证位置误差 **2.98cm**；阶段02 BC 60 轮：**0.2022m**（此前 0.181m 平台期，加宽网络无效，确认不是容量问题）。
+- 阶段03 站立热身 32 次；阶段04 selfplay + LS-NFSP 2,000 updates（256 env，`deployment/b12_nfsp.sh`）。
+- **阶段04 训练侧首次出现真实出拳信号**：`impulse_strike_reward` 分段均值 0.009 → 0.034 → 0.145 → 1.0 → 1.25（第 1,163 轮），`task_reward` 1.31；奖励口径为**腕部→对方躯干 20ms 接触冲量**（`rewards.py: impulse_strike_reward`），不是空挥。
+- 事故：2026-10-28 16:5x 训练中**并发**跑 native 评测（mujoco-warp 编译），容器掉线，回退到已归档的 `model_1024`；已立规则：训练期间禁止并发评测。
+- 待办：从 `model_1024` 续跑剩余 976 轮 → 训练完全退出后再做四局 native 评测（BR/AVG × side0/1，命中按 `hit_count[candidate_side]` 计）→ 渲染视频。

@@ -1,0 +1,1260 @@
+
+
+===== PAGE 1 =====
+RoboStriker: Latent-Space Strategic Games for
+Autonomous Humanoid Boxing
+Kangning Yin1,2,3∗, Kaige Liu4,2,3∗, Zhe Cao2∗, Wentao Dong1,2, Weishuai Zeng2, Tianyi Zhang1, Qiang Zhang5,
+Jingbo Wang2, Jiangmiao Pang2, Yang Li1,2†, Ming Zhou2†, Weinan Zhang1,2†
+1Shanghai Jiao Tong University, 2Shanghai Artificial Intelligence Laboratory, 3Shanghai Innovation Institute,
+4Huazhong University of Science and Technology, 5University of Science and Technology of China
+Abstract— Achieving human-level competitive intelligence
+and physical agility in humanoid robots remains a profound
+challenge, particularly in contact-rich and highly dynamic tasks
+such as boxing. While Multi-Agent Reinforcement Learning
+offers a principled framework for strategic interaction, its
+direct application to unstructured raw motor spaces inevitably
+leads to joint-level physical collapse, preventing the emergence
+of any viable combat tactics. To resolve this fundamental
+conflict between strategic exploration and physical feasibility,
+we formulate the humanoid combat task as a novel two-
+player latent-space zero-sum Markov game. Under standard
+regularity and approximate best-response assumptions, we show
+that the latent formulation induces an equivalent game over the
+decoder-reachable action manifold, providing an approximate-
+Nash interpretation of the resulting self-play dynamics. To in-
+stantiate this theoretical formulation, we propose RoboStriker,
+a hierarchical framework that decouples high-level reasoning
+from low-level execution. It first distills the tracking expertise
+of predefined boxing motions into a topologically bounded
+latent manifold. This structured latent foundation subsequently
+drives multi-agent co-evolution via Latent-Space Neural Fic-
+titious Self-Play. Extensive experimental results demonstrate
+that gaming within this structured latent space substantially
+outperforms direct exploration. By constraining strategic ex-
+ploration through a pretrained motion decoder, RoboStriker
+substantially reduces the catastrophic balance failures observed
+in raw action-space methods and achieves superior tactical per-
+formance in both competitive win rates and striking efficiency.
+Finally, we successfully deploy and validate our learned combat
+policies on real-world humanoid robots. Our code and video
+and supplementary materials are available at RoboStriker.
+I. INTRODUCTION
+Humanoid robots serve as a critical frontier for embod-
+ied intelligence. Recent breakthroughs have demonstrated
+outstanding capabilities in locomotion and agile maneuvers
+[1–4]. These successes, however, rely heavily on static
+or predictable environments where the primary objective
+is single-agent whole-body motion tracking and trajectory
+generation [2, 5]. When extending humanoid control to com-
+petitive, multi-agent physical interactions, such as boxing,
+the problem fundamentally shifts from isolated trajectory
+tracking to strategic co-adaptation under severe physical con-
+straints. This shift naturally frames humanoid competition as
+a multi-agent reinforcement learning problem.
+Yet, enabling humanoid robots to engage in competitive
+physical interactions presents a profound scientific challenge:
+the fundamental conflict between unconstrained strategic
+interaction and strict physical feasibility. From a robotics
+perspective, a humanoid robot, such as the Unitree G1,
+operates within a high-dimensional, unstructured raw mo-
+tor space. The core difficulty is that the vast majority of
+joint combinations in this unconstrained space correspond to
+physically invalid motions. To discover competitive tactics,
+reinforcement learning inherently requires active, diverse
+exploration. However, executing such unconstrained explo-
+ration in a fragile action space inevitably leads to catastrophic
+balance failures long before any meaningful strategic interac-
+tion can materialize [5, 6]. Consequently, robots are heavily
+penalized for these basic physical violations, creating an
+embodied cold-start problem where discovering even a single
+valid combat maneuver is overwhelmingly difficult [7]. This
+inherent physical fragility is then critically exacerbated in
+the multi-agent setting, where an active, evolving opponent
+introduces continuous, unpredictable physical perturbations
+[8, 9]. Without any structural bounds in the raw motor space
+to physically withstand these impacts, the learning process
+frequently collapses under the weight of basic balance main-
+tenance, completely preventing the emergence of higher-level
+tactical intelligence.
+To resolve this bottleneck, we formulate humanoid boxing
+as a two-player latent-space zero-sum Markov game, where
+strategic competition occurs over a bounded latent domain
+and a pretrained low-level motion decoder maps latent ac-
+tions to a decoder-reachable motor manifold. Under standard
+regularity and approximate best-response assumptions, the
+resulting latent game admits an approximate-Nash interpre-
+tation over this decoder-induced action manifold (details in
+Section III-A).
+Building on this theoretical formulation, we introduce Ro-
+boStriker, a hierarchical framework that decomposes embod-
+ied MARL into three coupled layers: a physically grounded
+motion library, a structured latent motion space for strategy
+representation, and multi-agent strategy evolution over this
+latent space. In the first layer, we establish a tracking policy
+to faithfully reproduce diverse human motion primitives.
+In the second layer, we distill these skills into a bounded
+latent motion space that supports diverse motion generation.
+Finally, we introduce Latent-Space NFSP (LS-NFSP), en-
+arXiv:2608.16195v1  [cs.RO]  17 Aug 2026
+
+
+===== PAGE 2 =====
+abling multi-agent co-evolution within this compact mani-
+fold. Furthermore, an Adversarial Motion Prior (AMP) [6]
+curriculum warmup initializes the policy, mitigating the
+competitive cold-start problem and substantially reducing
+non-stationarity. We evaluate our framework on a humanoid
+boxing task using Unitree G1 robots [10]. Experimental re-
+sults demonstrate that by restricting strategic exploration to a
+physically grounded latent space, RoboStriker fundamentally
+avoids the balance collapse inherent in existing baselines.
+Our core contributions are summarized as follows:
+• We formulate competitive humanoid boxing as a two-
+player latent-space zero-sum Markov game induced by
+a pretrained motion decoder. Under standard regularity
+and approximate best-response assumptions, we char-
+acterize the correspondence between latent strategies
+and the decoder-reachable physical action manifold,
+providing an approximate-Nash analysis of the resulting
+game.
+• We propose RoboStriker, a hierarchical algorithmic
+framework that instantiates this latent game by de-
+coupling high-level strategic reasoning from low-level
+physical execution. By distilling motion tracking exper-
+tise into a topologically structured continuous manifold,
+the framework seamlessly drives robust multi-agent co-
+evolution via Latent-Space Neural Fictitious Self-Play.
+• We empirically validate our framework on 29-degree-of-
+freedom Unitree G1 humanoids, demonstrating that Ro-
+boStriker achieves superior tactical performance by sur-
+passing existing baselines in competitive win rates and
+striking efficiency. Our experiments further show that
+latent-space strategic learning substantially improves
+physical stability over raw action-space exploration,
+while the 29-DoF+AMP baseline confirms that these
+gains cannot be explained by motion regularization
+alone. Finally, we validate the learned policies on real-
+world humanoid hardware, as shown in Figure 3.
+II. RELATED WORK
+A. Humanoid Motion Synthesis and Control
+Physics-based humanoid control has progressed from
+motion-specific imitation [5] to adversarial motion priors [6]
+and recent universal motion trackers [2, 4, 11]. These meth-
+ods enable robust reproduction of diverse human motions
+under physical constraints, providing an effective foundation
+for reusable whole-body control. However, they primarily
+focus on single-agent motion tracking or task execution
+with externally specified motion objectives. Competitive hu-
+manoid interaction introduces an additional challenge: the
+controller must not only preserve balance and motion quality,
+but also continuously adapt its behavior to a non-stationary
+and physically interacting opponent. RoboStriker builds on
+robust motion tracking as a low-level motor foundation and
+studies how such motor expertise can be exposed as a
+compact interface for multi-agent strategic learning.
+B. Latent Motion Representations and Motion Priors
+Learning reusable latent motion representations is a
+common approach for reducing the complexity of high-
+dimensional character and humanoid control. ASE [12]
+learns reusable adversarial skill embeddings with a hyper-
+spherical latent representation, while CALM [13] develops
+conditional latent models for controllable character behav-
+iors. PULSE [7] instead learns a state-conditioned latent
+motion representation that distills broad humanoid motion
+expertise into a compact interface for downstream control.
+These works demonstrate that learned latent variables can
+provide effective abstractions over complex motor behaviors.
+Our work does not rely on the hyperspherical parame-
+terization itself as a new motion-representation mechanism.
+Rather, we use a bounded latent motion interface as the
+strategic action space of a competitive humanoid game.
+The pretrained state-conditioned decoder maps high-level
+latent decisions to a decoder-reachable motor manifold, while
+multi-agent learning is performed entirely over this compact
+interface. This formulation allows us to explicitly study how
+latent action abstraction interacts with adversarial motion
+regularization and competitive self-play.
+C. Competitive Character Control and Multi-Agent Rein-
+forcement Learning
+Competitive control has been extensively studied in multi-
+agent reinforcement learning and physically simulated char-
+acter animation. Classical self-play [8, 9] enables agents
+to improve through repeated interaction, while fictitious
+play [14] and Neural Fictitious Self-Play [15] stabilize learn-
+ing by incorporating historical or averaged opponent strate-
+gies. Prior work has also demonstrated physically simulated
+characters performing competitive sports, including two-
+player athletic interactions [16], and more recent humanoid
+systems have explored learned athletic skills in interactive
+sports settings [17].
+RoboStriker builds on these studies by performing compet-
+itive learning over a pretrained latent motion interface rather
+than the full motor space. Combined with Neural Fictitious
+Self-Play, this decouples opponent-dependent strategy learn-
+ing from low-level whole-body execution while restricting
+optimization to a compact latent domain. This formulation
+also provides the basis for our approximate-Nash analysis of
+the induced latent game.
+III. METHOD
+Achieving autonomous humanoid boxing requires over-
+coming the fundamental conflict between unconstrained
+multi-agent strategic exploration and the extreme physical
+fragility of high-dimensional motor control. To resolve this
+inherent instability, we propose RoboStriker, a hierarchical
+competitive learning framework that integrates theoretical
+game formulation with a robust execution pipeline. We
+first formalize the combat task as a two-player latent-space
+zero-sum Markov game in Section III-A, where strategic
+interaction is restricted to a bounded latent domain induced
+
+
+===== PAGE 3 =====
+𝝅𝜽
+𝒛𝒕= 𝚫𝒛𝐭+ 𝒛𝐭
+𝒑
+𝒔𝒕
+𝒈𝒐𝒂𝒍
+𝑷𝝃
+#
+𝒔𝒕
+𝒑𝒓𝒐𝒑
+𝒂𝒕
+Stage I: Learning Expertise Motion Tracker
+Humanoid Boxing Motion Dataset
+Motion trajectories 𝝉
+Stage II: Motion Encoding via Distillation
+Stage III (a): Behavioral Warm-Up
+Proximal Policy 
+Optimization
+Two-player Latent 
+Zero-sum Game 𝓜
+𝒔𝒕
+𝒓𝒆𝒇∼𝝉
+𝒐𝒕
+Motion tracker: 𝝅𝒕𝒓𝒌
+𝒐𝒕= 𝒔𝒕
+𝒔𝒆𝒍𝒇, 𝒔𝒕
+𝒓𝒆𝒇 
+𝐦𝐢𝐧
+𝑫𝝍∥𝒂𝒕−𝒂1𝒕∥+ 𝐦𝐢𝐧
+𝑷𝝃,𝑬𝝓
+𝑲𝑳𝑬𝝓∥𝑷𝝃
+Decoder 
+𝑫𝝍
+Encoder 
+𝑬𝝓
+𝒂1𝒕
+𝒛𝒕∼𝓝𝝁𝒕𝒆, 𝝈𝒕𝒆
+𝑜%
+Prior 𝑷𝝃
+𝒩𝝁𝒕
+𝒑, 𝝈𝒕
+𝒑
+𝒔𝒕
+𝒑𝒓𝒐𝒑
+Stage III (b): Latent-Space NFSP
+𝑫𝝍
+#
+𝓝𝝁𝒕
+𝒑, 𝝈𝒕
+𝒑
+𝓝𝝁𝒕, 𝝈𝒕
+style reward 𝒓𝒔𝒕𝒚𝒍𝒆
+AMP Discriminator 𝑪
+Humanoid Boxing Motion 
+Dataset
+𝒂𝒕
+𝒔𝒕, 𝒂𝒕, 𝒔𝒕(𝟏, 𝒓𝒕
+Rollout buffer 𝒟𝑹𝑳
+Reservoir buffer 𝒟𝑺𝑳
+Iterative update
+Robot A
+𝝈𝑨= 𝜼⋅𝝅'𝒛+ 𝟏−𝜼⋅𝝅𝒛𝑹𝑳
+𝝅𝒛𝑹𝑳
+𝝅;𝒛
+Robot B
+𝝈𝑩= 𝜼⋅𝝅'𝒛+ 𝟏−𝜼⋅𝝅𝒛𝑹𝑳
+𝝅𝒛𝑹𝑳
+𝝅;𝒛
+Iterative update
+Rollout buffer 𝒟𝑹𝑳
+Reservoir buffer 𝒟𝑺𝑳
+𝒔𝒕, 𝒂𝒕, 𝒔𝒕(𝟏, 𝒓𝒕
+Latent Space 𝒛𝒕
+𝟏
+Latent Space 𝒛𝒕
+𝟐
+LS-NFSP
+Decoder 𝑫𝝍: 𝓩⟶𝓐
+Physical Interaction in 𝓐
+Robot 1(𝒂𝒕
+𝟏⊂ℝ𝟐𝟗)
+Robot 2(𝒂𝒕
+𝟏⊂ℝ𝟐𝟗)
+Strategic Equivalence
+Nash Equilibrium
+(Proposition 3.3)
+KL
+Fig. 1: Overview of RoboStriker. Stage I pretrains a motion tracker to produce physically plausible humanoid behaviors;
+Stage II compresses these behaviors into a bounded latent space for high-level control; Stage III(a) runs warm-up training
+on top of Stage II, then followed with Stage III(b), a NFSP over latent-space to solve the humanoid boxing as a two-player
+latent space zero-sum game.
+by the pretrained motion decoder. A formal approximate-
+Nash analysis of this induced game is provided on our
+project page. To instantiate this formulation, our pipeline
+systematically decouples high-level intent from low-level
+execution through three seamlessly coupled stages: learning
+a robust physical foundation via a universal motion tracker
+detailed in Section III-B; distilling diverse motor expertise
+into the topologically structured latent space outlined in Sec-
+tion III-C; and progressively evolving multi-agent strategies
+via an AMP-regularized warmup and Latent-Space Neural
+Fictitious Self-Play elaborated in Section III-D and III-E.
+A. Two-player Latent Space Zero-sum Markov Games
+We formulate the two-player humanoid boxing task as
+a latent-space zero-sum Markov Game, defined by tuple
+M = ⟨I, S, {O}i∈I, {A}i∈I, {Z}i∈I, Dψ, P, {U}i∈I, γ⟩.
+I = {1, 2} is the set of players, S is the underlying state
+space, and {O}i∈I is the set of player observation spaces.
+Crucially, to distinguish high-level strategic reasoning
+from low-level physical execution, we explicitly define
+{A}i∈I as the set of raw motor action spaces, specially
+designating Ai ⊂R29 as the 29-degree-of-freedom joint
+position targets. We also define {Z}i∈I as the set of
+bounded continuous latent strategy spaces, where Zi ⊂Rd.
+Actions executed in the environment are mapped from the
+latent space via a pre-trained, shared motion decoder Dψ :
+S × Zi →Ai. Consequently, the environment’s underlying
+transition dynamics Penv : S ×A1 ×· · ·×A|I| →∆(S) and
+raw utility functions ui
+env : S ×A1 ×· · ·×A|I| →R induce
+a latent-level transition function P : S × Z1 × · · · × Z|I| →
+∆(S) and utility function ui ∈Ui : S×Z1×· · ·×Z|I| →R.
+Here ∆(·) denotes the probability simplex over a given set.
+Specifically, the induced utility is given by ui(s, z1, z2) =
+ui
+env(s, Dψ(s, z1), Dψ(s, z2)), with γ ∈[0, 1) as the dis-
+count factor.
+Let each player i
+∈
+I adopt a latent policy πi
+z
+:
+Oi →∆(Zi), with the joint policy denoted by πz =
+(π1
+z, π2
+z). The expected return for player i under joint
+policy πz from state s
+∈
+S is given by V i
+πz(s)
+=
+E
+ P∞
+t=0 γt ui(st, zi
+t, z−i
+t ) | s0 = s
+ 
+, where −i indicates the
+opponent. In the strictly zero-sum setting u1 = −u2, rather
+than directly solving a static optimization objective, each
+agent iteratively updates its policy by computing an approx-
+imate best response to the empirical strategy distribution of
+its opponent. If the policy updates are treated as bounded-
+error approximate best responses to the empirical opponent
+strategy, the resulting empirical policies admit an ϵ-Nash
+characterization in the latent game. The corresponding ap-
+proximation error depends on the quality of the learned best
+responses and regularization introduced during optimization.
+A formal analysis of latent-space approximate Nash con-
+vergence, including assumptions and a proof sketch, is pro-
+vided on project page. We next instantiate the latent-game
+formulation through a three-stage hierarchical pipeline.
+B. Learning Expertise Motion Tracker
+In the first stage shown in Figure 1 (Stage I), we learn a
+robust low-level controller that can faithfully track diverse
+humanoid boxing motions and provide a stable motor foun-
+dation for high-level strategic learning. The tracker πtrk(at |
+
+
+===== PAGE 4 =====
+sself
+t
+, sref
+t ) is trained using human motion capture data and
+shared across all robots, where sself
+t
+= (sprop
+t
+, spriv
+t
+). Here,
+sprop
+t
+denotes a robot’s proprioceptive state at timestep t and
+spriv
+t
+represents privileged observations that are inaccessible
+to the robot’s onboard sensors. sref
+t
+specifies a reference
+motion goal derived from human motion capture data, which
+is represented as a time-indexed sequence of full-body hu-
+manoid poses and velocities extracted from motion capture
+dataset Dmotion. Each sref
+t
+encodes the root position and
+orientation, joint angles, and corresponding joint velocities
+in a canonical humanoid kinematic tree. All motions are
+temporally aligned and retargeted to the simulated humanoid
+morphology, enabling consistent tracking across diverse box-
+ing behaviors. The objective maximizes expected tracking re-
+wards rtrk over reference trajectories τ ref, encouraging high-
+fidelity imitation while maintaining physical plausibility,
+π∗
+trk = arg max
+πtrk Esref∼τ ref,τ ref∼Dmotion
+ 
+Jπtrk(sref)
+ 
+,
+(1)
+where Jπtrk(sref) = Eat∼πtrk
+" T
+X
+t=0
+γt rtrk(sself
+t
+, at; sref)
+#
+.
+Concretely, we collect boxing motions from professional
+boxers with an Xsens motion capture system [18] and double
+the corpus via left–right mirroring, yielding ∼30 minutes at
+50 Hz motion sequences, covering strikes, defense, footwork,
+and transitions. Captured sequences are retargeted to the
+Unitree G1 morphology with Generalized Motion Retarget-
+ing [19] to form Dmotion. The tracking observation concate-
+nates proprioception sprop
+t
+, a short-horizon reference window
+of K=3 future poses, and the previous action at−1; the action
+is a 29-DoF joint-position target tracked by a PD controller.
+The reward rtrk is a weighted sum of exponential terms
+for root and body pose/orientation tracking, linear/angular
+velocity matching, and control regularization (action rate,
+joint limits, and undesired contacts). Following [5], episodes
+terminate early under pose collapse, end-effector height
+violations, or a 10 s horizon cap. Exact reward weights and
+scaling coefficients are provided on our project page.
+C. Encoding Motion via Topological Latent Distillation
+As illustrated in Figure 1 (Stage II), to enable learnable
+strategic control, we project the high-dimensional motion
+space into a compact, continuous latent space Z. This is
+achieved via a teacher-student distillation framework [20]
+consisting of an encoder Eϕ, a decoder Dψ, and a state-
+conditioned latent prior Pξ. The encoder maps observations
+ot = (sself
+t
+, sref
+t ) to a distribution of latent codes zt ∼
+Eϕ(· | ot). In implementation, we model Eϕ(zt) as diagonal
+Gaussian N(zt | µe
+t, σe
+t ). Then the decoder is trained to
+reconstruct the teacher’s actions at ∼πtrk(· | ot) conditioned
+on (sprop
+t
+, zt) as
+D⋆
+ψ = arg min
+Dψ ∥at −ˆat ∥,
+(2)
+where ˆat ∼Dψ(· | sprop
+t
+, zt). Acknowledging the inherent
+state-dependency of motion generation, we explicitly learn
+a state-conditioned latent prior, denoted as Pξ(zt | sprop
+t
+) =
+N(zt | µp
+t , σp
+t ). This prior serves to model valid transitions
+from the current proprioceptive state and constrains the
+encoder Eϕ(zt | ot) via KL-regularization [21], thereby
+preventing posterior collapse, i.e.,
+(E⋆
+ϕ, P ⋆
+ξ ) = arg min
+(Eϕ,Pξ) DKL (Eϕ(zt | ot) ∥Pξ(zt | sprop
+t
+)) .
+(3)
+A key design is to bound the strategic latent domain.
+We therefore normalize latent codes onto the unit hyper-
+sphere, providing a compact parameterization for high-level
+optimization. The pretrained state-conditioned decoder sub-
+sequently maps these latent decisions onto its learned motor
+manifold, which serves as the effective physical action space
+of the induced game. In implementation, we let z satisfy the
+requirements with normalization as
+ˆz = Normalize(z) =
+Eϕ(o)
+∥Eϕ(o)∥2
+,
+(4)
+thereby constraining the latent representation of z to lie on
+the unit hypersphere. Jointly, the student optimizes action
+reconstruction and prior alignment,
+Lrec = E
+ 
+∥at −ˆat∥2 
+,
+(5)
+Lprior = E
+ 
+DKL
+ Eϕ(zt | ot) ∥Pξ(zt | sprop
+t
+)
+  
+,
+(6)
+Ldistill = Lrec + λpriorLprior,
+(7)
+with λprior
+=
+0.001. This dual objective recovers the
+teacher’s motor expertise while constructing a structured,
+prior-conditioned manifold for subsequent competitive co-
+evolution.
+D. Behavioral Warmup with Adversarial Priors
+To bypass the severe instability caused by initiating self-
+play without basic tactical competence, we design a behav-
+ioral warmup stage, as depicted in Figure 1 (Stage IIIa). The
+agents learn effective striking behaviors against a stationary
+opponent that strictly maintains a stable standing stance. A
+learnable residual policy πθ(· | sgoal
+t
+) outputs residual latent
+commands ∆zt over a fixed behavioral prior P ⊥
+ξ
+from the
+second stage, ensuring stable and human-like motions. Then,
+the complete form of πz is
+πz(· | sprop, sgoal) = πθ(· | sgoal) ⊕P ⊥
+ξ (· | sprop
+t
+),
+(8)
+where the operator ⊕defines a normalized residual addition
+in the continuous action space. The corresponding generation
+of zt is formulated as
+zt = Normalize(∆zt + zp
+t ),
+(9)
+where ∆zt ∼πθ(· | sgoal) and zp
+t ∼P ⊥
+ξ (· | sprop).
+Unlike tracking, autonomous boxing provides no explicit
+motion commands. Instead, the residual policy conditions
+on a goal observation sgoal that concatenates ego-centric
+offensive and defensive geometry: relative vectors from the
+ego fists to the opponent torso, and from the opponent fists
+to the ego torso, all rotated into the ego root frame so that
+striking and threat cues are orientation-invariant. To prevent
+degradation of motion quality, we regularize the warmup
+
+
+===== PAGE 5 =====
+with AMP [6]. A discriminator C distinguishes motion
+transitions produced by (πz, Dψ) from reference clips in
+Dmotion, using discriminator features that include local joint
+rotations/velocities and base angular velocity. With a gradient
+penalty on real transitions, the discriminator is trained as
+arg min
+C
+EdDmotion
+ 
+(C(odisc
+t
+, odisc
+t+1) −1)2 
++ Edπz,Dψ
+ 
+(C(odisc
+t
+, odisc
+t+1) + 1)2 
++ wgp EdDmotion
+ 
+∥∇C(odisc
+t
+, odisc
+t+1)∥2 
+,
+(10)
+and supplies a style reward rstyle to the policy. Thus, the
+learning objective is to maximize the expected return:
+π⋆
+z = arg max
+πz Eτ∼(πz,Dψ)
+" T
+X
+t=0
+γtR(st, zt)
+#
+,
+(11)
+where R(st, zt) = wtask · rtask(st) + wstyle · rstyle(st, st+1),
+and the task term further decomposes into facing align-
+ment, approach velocity, gated striking distance, and contact-
+validated hit rewards. Detailed warmup shaping formulas and
+numeric weights are provided on our project page.
+E. Latent-Space Neural Fictitious Self-Play
+Building upon the behavioral warmup stage, we adopt
+Latent-Space Neural Fictitious Self-Play to drive competitive
+co-evolution, as illustrated in Figure 1(StageIIIb). Standard
+fictitious self-play in unconstrained motor spaces often col-
+lapses due to the severe physical fragility of humanoids.
+By implementing the competitive dynamics strictly over
+the structured latent action space Z rather than the raw
+motor space, our approach successfully neutralizes these
+instabilities.
+In our framework, each player is controlled by an inde-
+pendent agent that maintains a dual-policy system learning
+through simultaneous self-play interactions. An agent records
+its experience into two distinct buffers: a reinforcement
+learning dataset DRL storing recent transitions, and a su-
+pervised learning dataset DSL functioning as a reservoir
+of its historical best-response behaviors. For each agent,
+we train a best-response policy πRL
+z
+via Proximal Policy
+Optimization [22] using samples from DRL. Crucially, be-
+cause the latent manifold Z is topologically bounded on a
+unit hypersphere, this reinforcement learning optimization
+inherently avoids the out-of-distribution physical actions that
+typically cause catastrophic forgetting and balance failures in
+continuous control.
+In parallel, we train an average policy ¯πz from DSL via
+supervised learning to imitate the historical best-response
+distribution. Over learning iterations k = 1, . . . , K, the
+supervised dataset is incrementally updated as
+Dk
+SL = Dk−1
+SL ∪Dk
+RL, ∀k = 1, . . . , K.
+(12)
+To keep ¯πz representative of the full behavioral history rather
+than only recent iterations, DSL is maintained by reservoir
+sampling with capacity K: a new experience n > K replaces
+a uniformly chosen entry with probability K/n. Action
+selection over the continuous latent space follows a mixture
+Algorithm 1 Latent-Space Neural Fictitious Self-Play (LS-
+NFSP)
+Require: Two-player zero-sum game environment M, an-
+ticipatory parameter η ∈[0, 1], horizon T
+Require: Best-response (RL) policies {πRL
+z,θi}i∈{1,2}, aver-
+age policies {¯πz,ϕi}i∈{1,2}
+Require: On-policy buffers {Di
+RL}i∈{1,2}, reservoir buffers
+{Di
+SL}i∈{1,2}
+1: for iteration k = 1, 2, . . . do
+2:
+Reset M and observe o1
+1, o2
+1
+3:
+for t = 1, 2, . . . , T do
+4:
+for each player i ∈{1, 2} do
+5:
+Sample mode mi ∼Bernoulli(η)
+6:
+if mi = 1 then
+7:
+Sample zi
+t ∼πRL
+z,θi(· | oi
+t)
+8:
+Insert (oi
+t, zi
+t) into Di
+SL via reservoir sam-
+pling
+9:
+else
+10:
+Sample zi
+t ∼¯πz,ϕi(· | oi
+t)
+11:
+end if
+12:
+end for
+13:
+Step M with (z1
+t , z2
+t ); receive (r1
+t , r2
+t ) and
+(o1
+t+1, o2
+t+1)
+14:
+for each player i ∈{1, 2} do
+15:
+Append (oi
+t, zi
+t, ri
+t, oi
+t+1) to Di
+RL
+16:
+end for
+17:
+end for
+18:
+for each player i ∈{1, 2} do
+19:
+Update θi with PPO on Di
+RL
+20:
+Update
+ϕi
+by
+minimizing
+LSL
+=
+E(o,z)∼Di
+SL
+ 
+∥¯πz,ϕi(o) −z∥2 
+21:
+end for
+22: end for
+23: return average policies {¯πz,ϕi}i∈{1,2}
+strategy controlled by an anticipatory parameter η ∈[0, 1).
+Formally, the mixed strategy is defined as
+σ = η · ¯πz + (1 −η) · πRL
+z
+,
+(13)
+with latent actions sampled as zt ∼σ(· | sprop
+t
+, sgoal
+t
+).
+Under this formulation, πRL
+z
+represents an approximate best
+response to the mixed strategies of the opponent, while ¯πz
+acts as a stable strategic anchor. As established in our earlier
+theoretical analysis, the bounded latent parameterization pro-
+vides the compact strategy domain required by our analysis.
+When the PPO updates approximate best responses with
+bounded error, the resulting empirical strategy can be inter-
+preted as an approximate equilibrium of the decoder-induced
+latent game. Algorithm 1 summarizes the complete training
+loop. Competitive-stage reward terms and their weights are
+detailed on our project page.
+
+
+===== PAGE 6 =====
+TABLE I: Win Rate (%) of Cross-Playing and Tactical Performance. Each Win Rate is the win rate of the row agent against
+the column agent, averaged over 20 evaluation rounds with 4,096 parallel bouts per round. Offensive Landing Rate (ηhit)
+and Engagement Rate (ER) are evaluated against Naive Self-Play (Latent). Bold values indicate the top-1 values in the table.
+Methods
+Win Rate (%) vs. Opponent
+ηhit ↑
+ER ↑
+(1)
+(2)
+(3)
+(4)
+(5)
+(6)
+(7)
+(8)
+(9)
+(1) RoboStriker
+–
+68.52 76.24 82.41 84.47 95.38 98.50 100.0 92.50 0.685 ± 0.03 0.824 ± 0.02
+(2) Fictitious SP
+–
+–
+62.35 71.84 75.16 92.11 96.18 99.42 88.14 0.420 ± 0.03 0.650 ± 0.04
+(3) Naive SP
+–
+–
+–
+68.45 70.38 88.61 94.52 98.53 85.25 0.350 ± 0.04 0.580 ± 0.05
+(4) RoboStriker w/o AMP
+–
+–
+–
+–
+62.12 82.14 88.37 95.18 78.40 0.490 ± 0.03 0.720 ± 0.05
+(5) PPO-Only
+–
+–
+–
+–
+–
+45.24 77.86 82.11 68.55 0.231 ± 0.03 0.495 ± 0.02
+(6) Static-Target Specialist
+–
+–
+–
+–
+–
+–
+60.33 85.58 62.18 0.210 ± 0.04 0.450 ± 0.06
+(7) RoboStriker w/o Warmup
+–
+–
+–
+–
+–
+–
+–
+94.17 51.34 0.050 ± 0.02 0.120 ± 0.05
+(8) 29Dof Action-Space SP
+–
+–
+–
+–
+–
+–
+–
+–
+11.50 0.142 ± 0.05 0.315 ± 0.08
+(9) 29Dof Action-Space + AMP
+–
+–
+–
+–
+–
+–
+–
+–
+–
+0.285 ± 0.04 0.465 ± 0.05
+IV. EXPERIMENT
+A. Experimental Setup
+We
+train
+the
+29-degree-of-freedom
+Unitree
+G1
+hu-
+manoid [10] in Isaac Lab [23] on a single NVIDIA RTX
+4090 GPU, with 4,096 parallel environments, a 200 Hz
+physics loop, and a 50 Hz control policy. Strategic co-
+evolution operates over a 32-dimensional latent manifold.
+In the final LS-NFSP stage, we set the mixing coefficient
+to η = 0.1 and maintain a strategy reservoir of capacity
+K = 106 samples per agent, with task and AMP style
+weights wtask = 0.8 and wstyle = 0.2, and prior coefficient
+λprior = 0.001.
+To promote sim-to-real transfer, we randomize contact
+materials, joint biases, torso center-of-mass, and intermittent
+external pushes throughout training. The full randomization
+ranges are provided on our project page.
+We compare RoboStriker against baselines that isolate
+opponent modeling and policy averaging, curriculum design
+, latent-space abstraction, and motion regularization. Naive
+SP uses the same latent action space as ours but always trains
+against the opponent’s latest policy [8, 9], while Fictitious
+SP samples uniformly from historical opponent policies [14]
+without learning an explicit average-policy network. PPO-
+Only trains against a fixed opponent using PPO [22], and
+Static-Target Specialist directly evaluates the warmup pol-
+icy before competitive self-play. SP w/o Warmup initiates
+self-play from scratch to test the role of the behavioral
+curriculum.
+To disentangle latent action abstraction from motion-prior
+regularization, we further compare four controlled variants.
+RoboStriker w/o AMP removes the AMP style reward [6]
+while retaining the latent hierarchy. 29-DoF Action-Space
+SP performs self-play directly in the 29-DoF joint-position
+target space without the learned decoder. 29-DoF Action-
+Space + AMP augments this raw action-space baseline with
+the same AMP style objective used by RoboStriker, while
+still predicting joint targets directly. Together with the full
+RoboStriker model, these variants separate whether perfor-
+mance gains arise from AMP-based behavioral regularization
+or from structuring strategic exploration through the learned
+latent motion manifold.
+B. Evaluation Metrics
+We evaluate all methods across three complementary di-
+mensions, motivated by principles from professional boxing
+and robust robotic control:
+Tactical Proficiency. Win Rate measures overall supe-
+riority as the percentage of evaluation bouts won, where
+a bout terminates when any non-foot body part contacts
+the ground. Offensive Landing Rate, denoted as ηhit, is the
+proportion of offensive attempts whose contact force exceeds
+Fth = 10 N. Engagement Rate (ER) is the temporal fraction
+during which the agent simultaneously maintains an effective
+striking distance dt ∈[0.5, 1.2] m and a facing alignment
+cos(θt) > τface = 0.9, thereby penalizing tactical avoidance.
+Physical Stability. Physical stability is assessed via
+Base Orientation Stability (BOS) and Torque Smoothness
+(TSτ). BOS measures upright posture under perturbations
+via the angular deviation of gravity vectors: BOS
+=
+E[exp{−∥gbase−gworld∥2}], higher is better. TSτ quantifies
+high-frequency motor oscillations as the mean change in
+consecutive torques, TSτ = E[∥τt −τt−1∥], lower is better.
+Stylistic Authenticity. We qualitatively evaluate human-
+likeness through simulation snapshots, verifying the pres-
+ence of key boxing maneuvers such as slips, counters,
+and rhythmic footwork, and the absence of unnatural or
+physically unsustainable postures typical of unconstrained
+reinforcement learning policies.
+C. Strategic Proficiency Comparison
+Building on the baseline in subsection IV-A, we first exam-
+ine strategic proficiency. As presented in Table I, RoboStriker
+consistently outperforms competing methods, achieving win
+rates of 68.52% against Fictitious SP, 76.24% against Naive
+SP, and 84.47% against PPO-Only. Beyond cross-play win
+rates, this strategic superiority is further evidenced by the
+quantitative tactical metrics, where RoboStriker achieves the
+highest Engagement Rate of 0.824 and Offensive Landing
+Rate of 0.685. Adding AMP improves the raw action-space
+baseline from ηhit/ER = 0.142/0.315 to 0.285/0.465, yet
+RoboStriker still wins 92.50% of their cross-play bouts and
+reaches 0.685/0.824, indicating that AMP alone does not
+account for the advantage of latent-space control. The un-
+derlying training dynamics, illustrated in Subfigure b of Fig-
+
+
+===== PAGE 7 =====
+0
+2
+4
+6
+8
+10
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+BOS
+(a)
+Training Iterations (×103)
+0
+2
+4
+6
+8
+10
+0.0
+0.2
+0.4
+0.6
+0.8
+ηhit
+(b)
+Training Iterations (×103)
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Score
+ηhit ↑ER ↑
+(c)
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+BOS ↑TSτ ↓
+(d)
+0
+2
+4
+6
+8
+Cost
+29Dof Action-Space SP
+29Dof Action-Space + AMP
+Ours RoboStriker
+Ours RoboStriker
+RoboStriker w/o AMP
+Fictitious SP
+Naive SP
+PPO-Only
+Static-Target
+29Dof Action-Space
+SP w/o Warmup
+29Dof Action-Space + AMP
+Fig. 2: Comprehensive performance evaluation. Subfigures (a) and (b) show the training convergence of base stability and
+offensive landing rate across all methods. Subfigures (c) and (d) compare RoboStriker with direct 29-DoF action-space self-
+play with and without AMP, isolating the effects of motion-prior regularization and latent-space action abstraction on tactical
+proficiency and physical stability. Shaded regions denote the standard deviation across five independent random seeds.
+ure 2, reveal the specific limitations of the baselines. The
+PPO-Only agent, lacking competitive co-evolution, exhibits
+passive behavior with a low Engagement Rate of 0.495 and
+completely fails to discover proactive offensive strategies,
+yielding a landing rate of just 0.231. Meanwhile, the Naive
+SP agent suffers from severe cyclical oscillations driven
+by non-transitive policy cycling and catastrophic forgetting,
+limiting its engagement to 0.580. Although Fictitious SP
+mitigates these oscillations and improves the engagement
+to 0.650, its average policy convergence still results in a
+significantly lower offensive landing rate of 0.420 compared
+to our method. By integrating Neural Fictitious Self-Play
+within the latent manifold, RoboStriker successfully neutral-
+izes policy cycling and smoothly converges to the highest
+tactical proficiency.
+D. Advantage of Latent-Space over Raw Action-Space
+To isolate the contribution of latent-space abstraction from
+AMP regularization, we compare RoboStriker with direct 29-
+DoF action-space self-play with and without AMP. As shown
+in Figure 2, the unregularized action-space baseline suffers
+from severe instability and poor offensive performance, while
+adding AMP substantially improves both physical stability
+and tactical metrics.
+However, a clear gap remains between 29-DoF Action-
+Space + AMP and RoboStriker. Although AMP regularizes
+motion toward the reference distribution, strategic explo-
+ration is still performed directly in the high-dimensional
+joint space. In contrast, RoboStriker conducts exploration
+through the pretrained decoder over a structured latent
+manifold, achieving higher stability, engagement, striking
+efficiency, and torque smoothness. These results show that
+AMP and latent-space abstraction provide complementary
+benefits: AMP improves motion regularity, while the latent
+interface further structures the strategic search space.
+Fig. 3: Real-world validation of RoboStriker.
+E. Real-World Deployment
+Beyond simulation, we validate that the learned policies
+can transfer to physical hardware. We align simulation co-
+efficients with measured physical properties and apply the
+domain randomization described above across all training
+stages. Following [1], joint PD gains are set proportional
+to inertia as kp,j = Ijω2 and kd,j = 2Ijζω, with natural
+frequency ω = 10 and damping ratio ζ = 2. We deploy two
+Unitree G1 humanoids [10] in a motion-capture environment:
+policies run at 50 Hz via ONNX Runtime on the onboard
+CPUs and are coordinated through ROS 2 [24]. Pelvis mark-
+ers tracked at 100 Hz provide inter-robot spatial relations;
+combined with proprioception and forward kinematics, these
+yield the offensive target observations required by the boxing
+policy. To avoid abrupt torque discontinuities, both robots
+are initialized with a high-stiffness standing controller before
+transitioning to dynamic boxing. As illustrated in Figure 3,
+the robots execute stable, contact-rich maneuvers on hard-
+ware, confirming that the structured latent manifold isolates
+strategic reasoning from physical instability.
+
+
+===== PAGE 8 =====
+RoboStriker
+RoboStriker w/o AMP
+Fig. 4: Mujoco visualization of RoboStriker and the one
+without AMP.
+TABLE II: Ablation study on the latent dimension.
+Latent Dim.
+MPKPE (mm)
+Win Rate vs. 32
+ηhit
+8
+128.2 ± 4.4
+7.1%
+0.328 ± 0.03
+16
+85.9 ± 1.7
+23.6%
+0.334 ± 0.03
+32 (Ours)
+38.5 ± 0.4
+–
+0.685 ± 0.03
+64
+35.0 ± 0.4
+39.2%
+0.520 ± 0.08
+F. Ablation Study
+We
+systematically
+evaluate
+our
+core
+components
+across Table I, Figure 2, and Figure 4. First, as quantitatively
+recorded in Table I, removing the AMP module severely
+degrades
+offensive
+efficiency
+despite
+maintaining
+high
+engagement.
+Furthermore,
+the
+corresponding
+training
+trajectories in Figure 2 and simulation snapshots in Figure 4
+reveal that without AMP, the agent aggressively approaches
+but executes erratic strikes, completely abandoning standard
+guards for physically unnatural postures.
+Complementarily, adding AMP to the 29-DoF action-
+space baseline improves its stability and motion quality, but
+does not recover the performance of RoboStriker. Together,
+these ablations show that AMP regularization and latent-
+space abstraction play complementary roles: AMP encour-
+ages human-like behavior, while the latent decoder provides
+a structured motor interface for strategic exploration.
+Next, we validate the behavioral warm-up curriculum.
+As shown in Figure 2, initiating competitive self-play from
+scratch causes tactical performance to flatline near zero
+due to severe reward sparsity. Conversely, a Static-Target
+Specialist proficiently strikes passive targets but fails against
+dynamic opponents, yielding an overwhelming 95.38% win
+rate for RoboStriker. Thus, the synergy of progressive cur-
+riculum design and AMP-guided movement is indispensable
+for producing a physically authentic and strategically dom-
+inant controller. Finally, we evaluate the latent dimension
+trade-off between expressiveness and multi-agent stability.
+As illustrated in Table II, lower dimensions excessively
+constrain motion encoding, yielding rigid behaviors and high
+tracking discrepancies, quantified here by the Mean Per
+Keypoint Position Error(MPKPE). Expanding to 32 dimen-
+sions substantially improves kinematics, whereas 64 provides
+negligible physical gains. Strategically, this 64-dimensional
+expansion overcomplicates the continuous search manifold.
+The resulting representation redundancy slows convergence,
+degrading the offensive landing rate to 0.520. Ultimately, a
+32-dimensional space offers the optimal balance, ensuring
+motion fidelity while preserving a compact manifold for
+stable strategic learning.
+V. CONCLUSION
+To address the conflict between multi-agent strategic
+exploration and humanoid physical fragility, we formulate
+competitive boxing as a decoder-induced latent zero-sum
+Markov game and provide an approximate-Nash analysis
+under standard regularity and approximate best-response as-
+sumptions. We instantiate this theoretical foundation through
+RoboStriker, a hierarchical framework that decouples strate-
+gic reasoning from low-level balance control via a topologi-
+cally bounded manifold and drives competitive co-evolution
+using Latent-Space Neural Fictitious Self-Play. Extensive
+simulation evaluations, including cross-play tournaments and
+systematic ablations, demonstrate substantially improved
+physical stability and tactical proficiency over the evaluated
+baselines.
+REFERENCES
+[1]
+Q. Liao, T. E. Truong, X. Huang, G. Tevet, K. Sreenath, and
+C. K. Liu, Beyondmimic: From motion tracking to versatile humanoid
+control via guided diffusion, 2025. arXiv: 2508.08241 [cs.RO].
+[2]
+K. Yin et al., “Unitracker: Learning universal whole-body motion
+tracker for humanoid robots,” arXiv preprint arXiv:2507.07356,
+2025.
+[3]
+W. Zeng et al., Behavior foundation model for humanoid robots,
+2025. arXiv: 2509.13780 [cs.RO].
+[4]
+Z. Zhang et al., “Track any motions under any disturbances,” arXiv
+preprint arXiv:2509.13833, 2025.
+[5]
+X. B. Peng, P. Abbeel, S. Levine, and M. Van de Panne, “Deepmimic:
+Example-guided deep reinforcement learning of physics-based char-
+acter skills,” ACM Transactions On Graphics (TOG), vol. 37, no. 4,
+pp. 1–14, 2018.
+[6]
+X. B. Peng, Z. Ma, P. Abbeel, S. Levine, and A. Kanazawa,
+“Amp: Adversarial motion priors for stylized physics-based character
+control,” ACM Transactions on Graphics (ToG), vol. 40, no. 4,
+pp. 1–20, 2021.
+[7]
+Z. Luo et al., “Universal humanoid motion representations for
+physics-based control,” arXiv preprint arXiv:2310.04582, 2023.
+[8]
+A. L. Samuel, “Some studies in machine learning using the game of
+checkers,” IBM Journal of research and development, vol. 3, no. 3,
+pp. 210–229, 1959.
+[9]
+D. Hernandez et al., “A generalized framework for self-play train-
+ing,” in 2019 IEEE Conference on Games (CoG), IEEE, 2019,
+pp. 1–8.
+[10]
+Unitree, Unitree g1 humanoid agent ai avatar, 2024.
+[11]
+Z. Chen, M. Ji, X. Cheng, X. Peng, X. B. Peng, and X. Wang,
+“Gmt: General motion tracking for humanoid whole-body control,”
+arXiv:2506.14770, 2025.
+[12]
+X. B. Peng, Y. Guo, L. Halper, S. Levine, and S. Fidler, “Ase: Large-
+scale reusable adversarial skill embeddings for physically simulated
+characters,” ACM Transactions On Graphics (TOG), vol. 41, no. 4,
+pp. 1–17, 2022.
+[13]
+C. Tessler, Y. Kasten, Y. Guo, S. Mannor, G. Chechik, and X. B.
+Peng, “Calm: Conditional adversarial latent models for directable vir-
+tual characters,” in ACM SIGGRAPH 2023 Conference Proceedings,
+2023, pp. 1–9.
+[14]
+G. W. Brown, “Iterative solution of games by fictitious play,” Act.
+Anal. Prod Allocation, vol. 13, no. 1, p. 374, 1951.
+[15]
+J. Heinrich and D. Silver, “Deep reinforcement learning from
+self-play
+in
+imperfect-information
+games,”
+arXiv
+preprint
+arXiv:1603.01121, 2016.
+[16]
+J. Won, D. Gopinath, and J. Hodgins, “Control strategies for physi-
+cally simulated characters performing two-player competitive sports,”
+ACM Trans. Graph., vol. 40, no. 4, Jul. 2021.
+
+
+===== PAGE 9 =====
+[17]
+Z. Zhang et al., Learning athletic humanoid tennis skills from im-
+perfect human motion data, 2026. arXiv: 2603.12686 [cs.RO].
+[18]
+Xsens Technologies, Xsens mvn: Inertial motion capture system,
+Accessed: 2026-01-28, 2024.
+[19]
+J. P. Araujo, Y. Ze, P. Xu, J. Wu, and C. K. Liu, Retargeting matters:
+General motion retargeting for humanoid motion tracking, 2025.
+arXiv: 2510.02252 [cs.RO].
+[20]
+S. Ross, G. J. Gordon, and J. A. Bagnell, A reduction of imitation
+learning and structured prediction to no-regret online learning, 2011.
+arXiv: 1011.0686 [cs.LG].
+[21]
+J. R. Hershey and P. A. Olsen, “Approximating the kullback leibler
+divergence between gaussian mixture models,” in 2007 IEEE Inter-
+national Conference on Acoustics, Speech and Signal Processing-
+ICASSP’07, IEEE, vol. 4, 2007, pp. IV–317.
+[22]
+J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov,
+Proximal policy optimization algorithms, 2017. arXiv: 1707 .
+06347 [cs.LG].
+[23]
+NVIDIA et al., Isaac lab: A gpu-accelerated simulation frame-
+work for multi-modal robot learning, 2025. arXiv: 2511.04831
+[cs.RO].
+[24]
+S. Macenski, T. Foote, B. Gerkey, C. Lalancette, and W. Woodall,
+“Robot operating system 2: Design, architecture, and uses in the
+wild,” in Science Robotics, vol. 7, 2022.

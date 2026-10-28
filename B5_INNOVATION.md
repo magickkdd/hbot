@@ -1,8 +1,9 @@
 # HBOT B5 创新方案：文献驱动的四刀规格
 
 > 版本 v1.0 · 建档 2026-10-25
+> **执行规格见 `B5_EXECUTION.md`（v2.0 完整版，2026-10-25 定稿）**：R1/R2/R3 已全部代码核实（R1 解除——冲量数据管道现成，刀③纯 reward 层；R3 确认需改 opponent_pool.py 两处）；权重 20、early-kill 门（update 100/300）、主 KPI = 有效命中数、基线补测 4 局、两场 8h 剧本均已写死。
 > 定位：PHASE3（B2 改进）与 B4 破局系列（H1–H5）已执行完毕，本文档是下一轮实验 **B5** 的完整规格。
-> 执行窗口：即日起 – 11/24；硬线：**12/1 代码冻结、12/3 初赛截止**。
+> 执行窗口：即日起 – 11/24（**新开分支软线**，过了只续不新）；硬线：**12/1 代码冻结（硬）、12/3 初赛截止**。与 B5_EXECUTION.md 口径一致。
 > 前置状态：最终候选已切换至 **H2b 谱系**（见 §0）。
 
 ---
@@ -16,7 +17,7 @@
 | 上层模型 | `results/boxing-h2b.onnx`，sha256 `f56fc9d834b40f45aaff1e7f9eba6bb591b27918c2466e991a1a32aadd98cafa` | `records/h2b-validation.json` |
 | checkpoint | `/mnt/workspace/HoloMotion/results/h2b-selfplay/model_1280.pt`，sha256 `019b5a37…`，累计 **1280 updates** | `records/b4-h2b-selfplay.json` |
 | validation | PASS，`mean_ms = 4.99145231`（threshold 5.0，**贴线通过**） | 同上 json，chain_benchmark 段 |
-| native 对战 | side0 **1000:5**（24.7s KO）+ side1 **19:1000**（56s 反杀 KO）＝ 双侧双 KO 胜 | `records/native-h2b-side{0,1}-result.json` |
+| native 对战 | 2-0，**但均为对手自倒**（翻案见 winrate.md ★★ 段：side1 倒地瞬间距 1.44m 铁证；side0 我方 HIT=0）；HIT 事件口径我方两局 0 命中、对方 24 | `records/native-h2b-side{0,1}-result.json` + match.json 帧分析 |
 | 对手 | RoboStriker `model_3000.pt`，sha256 `9f8bb366…`（evaluate_native 适配器） | 同上 |
 
 **注意**：`winrate.md` ★ 段曾误记 H2b 延迟为 4.75ms，权威口径以 `h2b-validation.json` 的 4.99145231 为准（已回填修正）。贴线意味着**每次采纳新模型前必须重跑 validate**，GPU 负载波动可能把 4.99 推过 5.0。
@@ -79,7 +80,7 @@ AlphaStar 式三类 agent：主力（main agent）+ 主 exploiter（唯一目标
 
 ### 刀①：长谱系续训（入场券，与刀③绑定执行）
 
-- **依据**：model_3000 锚点；H2b 谱系 1280 处 offensive 命中率 22%、native 双 KO——谱系仍在上升期，远未见顶。
+- **依据**：model_3000 锚点；H2b 谱系 1280 处 offensive 命中率 22%、native 两胜（虽系对手自倒，抗打不倒是真实的）——谱系仍在上升期，远未见顶。
 - **改动**：从 `results/h2b-selfplay/model_1280.pt` 出发，叠加刀③ patch 后 `--resume` 续训。**代码基座必须是 H 谱系分支 `p4-h1-vel@dcbd9b2`（patch 518e0257）**，叠加新 patch 需 `--allow-resume-code-change` 并记录原因。flags 与 H 谱系完全一致（128 envs / capacity 8 / refresh 32 / seed 42 / `selfplay.json`）。
 - **节奏**：1280 → **2560**（+1280 ≈ 1.35h）→ native 验收 → 若仍胜且失分减少 → **4096**（+1536 ≈ 1.62h）→ native 验收。
 - **硬约束**：只 `--resume`，不新开阶段（H4 教训）。
@@ -98,7 +99,7 @@ AlphaStar 式三类 agent：主力（main agent）+ 主 exploiter（唯一目标
   1. 从主谱系 fork 一个 **exploiter 分支**：对手池只放主模型最新快照，唯一目标=打爆主力；训 512 updates（≈0.54h）。
   2. 把训好的 exploiter checkpoint **注入主训练对手池**，主力继续 `--resume`。`opponent_pool.py:56-70` 已有快照池骨架；「外部 checkpoint 注入」是否需改代码待核实 → 风险 R3。
 - **硬约束**：exploiter 只进对手池，**永不作为提交候选**（它过拟合单对手，Elo 口径下是废棋）。
-- **门控**：仅当刀③① 执行完且额度剩余 > 6h 时开启。
+- **门控**：仅当刀③① 执行完且额度剩余 **> 5h** 时开启（与 B5_EXECUTION §6 统一）。
 
 ### 2.5 预算表与冻结线
 
@@ -111,14 +112,14 @@ AlphaStar 式三类 agent：主力（main agent）+ 主 exploiter（唯一目标
 | 刀②调参预留 1–2 轮 | ≤1.5h | ≤5.8h |
 | 刀④（门控）exploiter 512 + 主线 256 | ~0.8h ×2 轮 + native | ≤8h |
 
-- **首步必做**：让用户口述更新剩余额度（`instance_snapshot.md` 基线：总额度 31.5h @ 10-25 01:14；H 系列 09:11–16:15 已消耗当日会话额度）。**额度不明确不开训。**
+- **额度（2026-10-25 晚更新）**：总剩余 **16h，两次开机 × 8h**（用户口述，已记 instance_snapshot.md；31.5h 旧基线作废）。**额度不明确不开训。**
 - **冻结线**（沿用 PHASE3 量化规则）：`剩余额度 − 2.5h ≥ 分支成本` 且日期 ≤ 11/24 才开新分支；此后只续不新。
 
 ---
 
 ## 3. 验收口径（B5 全程统一）
 
-1. **唯一有效验收 = `evaluate_native` vs `model_3000`，双侧（side0 + side1）**。基准 = H2b 的 2-0 双 KO（1000:5 / 19:1000）。镜像 A/B 弃用。
+1. **唯一有效验收 = `evaluate_native` vs `model_3000`，每侧 2 局 + 事件级倒地归因**。基准 = H2b 的 HIT 0/0（要改的就是这个数）。镜像 A/B 弃用。（本节为调研版原文，执行口径以 B5_EXECUTION.md §4.5 两级判定为准）
 2. **判定**：净 KO 时间更短 / 失分更少 → 采纳并更新 `final-candidate.txt`；劣势 → REJECT，master 回退，谱系 checkpoint 留档。
 3. 每轮采纳前 `validate`，`mean_ms < 5.0`（H2b 4.99 贴线，逐轮重测）。
 4. 命令模板（主方案 §7.2 原样）：

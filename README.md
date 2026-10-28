@@ -13,10 +13,28 @@
 | `PHASE3_IMPROVEMENT.md` | 改进与 A/B 规格（P1/P2 分支、3 局制 A/B 协议） |
 | `PHASE4_FREEZE_FINAL.md` | 冻结与最终提交规格（提交节奏、12/1 冻结线、12/2 验证硬线） |
 | `B5_INNOVATION.md` | B5 创新轮规格（文献调研 + 四刀：冲量对齐奖励/长谱系/距离课程/exploiter 联赛） |
+| `B5_EXECUTION.md` | B5 执行规格（机制已核实：冲量奖励 patch/续训命令/native 判定矩阵/课程与联赛门控） |
+| `B6_DATA_SCALE.md` | 全量现有数据 × 多种子 prior/SL 规格（B6 v1；RL 部分暂缓） |
+| `B8_ROBOSTRIKER_REPRO.md` | **主规格（论文方法复现）**：Stage I→II→III(a)→III(b) 全链，规则强制项最小替换，state-conditioned prior + AMP warmup + LS-NFSP |
+| `B7_FULL_DATA_SL.md` | B8 的数据/初始化前置：InterHuman 全量 7,810 + RoboStriker 全量 → boxing prepared |
+| `ROBOSTRIKER_REPRO_ASSESSMENT.md` | 可行性分析附录（论文→规则映射、已复现/缺口、偏差记录） |
+| `B9_MIMIC_PIPELINE.md` | **B9 方案（对标小红书「单卡 7 分钟学拳击」）**：外部拳击动捕 → G1 重定向 → 潜空间建模 → 模仿初始化 → 站立热身 → 交互优化 |
+| `colab/B8_T4_TRAIN.ipynb` | Colab 免费 T4 训练 notebook（tmux/nohup/nice/keepalive/分块 resume；B7 SL 可跑，B8 代码条件加载） |
+| `deployment/pack_colab_data.sh` | ModelScope 实例上打包 Colab 所需数据/控制器/资产/checkpoint |
+| `deployment/shusheng_setup.sh` / `shusheng_run_sl.sh` / `shusheng_run_b8.sh` | **书生·端砚开发机**初始化 + B7 SL 分块续训 + B8 分块训练（全部落 `/data` 持久目录） |
+| `colab/B8_T4_TRAIN.ipynb` | Colab T4 备用 notebook（已弃用） |
+| `papers/` | RoboStriker 论文 PDF、全文抽取、结构化要点 |
 | `hbot_boxing_prelim_plan.md` | 上游主方案（§4.4 数据流程、§7 提交/Elo 策略、§9 风险预案） |
 | `deployment/` | ModelScope 免费实例的一键部署与自检脚本（Tailscale+SSH 隧道、post_boot 恢复、24 项状态自检） |
 | `records/` | 全部实验证据链：55 份验收/校验/对战/A-B 记录、补丁、计时、画像 |
 | `models/boxing-h2b.onnx` | 当前最终候选模型（H2b，native 双 KO，2.3MB，sha256 f56fc9d8… 见 records/final-candidate.txt；`boxing-b1.onnx` 为回退候选） |
+
+## 项目状态（2026-10-29 凌晨，B12 阶段04 训练中）
+
+- **B8/B9/B10/B11 全部 0 击中**：B8 LS-NFSP 长跑 4,000 updates、B9 CMU 拳击动捕、B10 合成对手、B11 拳击先验，native 四局我方命中始终为 0——瓶颈不是算力，是示范数据与训练对手的真实性。
+- **B12（当前主链，LAFAN1 真实双人对打）**：prepared 27,844 samples；先验 2.98cm → BC 0.202m → 站立热身 32 → selfplay+LS-NFSP 2,000 updates。
+- **首次出现真实出拳信号**：阶段04 训练侧 `impulse_strike_reward`（腕→躯干 20ms 接触冲量）分段均值 0.009 → 0.034 → 0.145 → 1.0 → 1.25（第 1,163 轮），`task_reward` 1.31。
+- **待验收**：从 `model_1024` 续跑剩余 976 轮；训练退出后做四局 native 评测（BR/AVG × side0/1，命中按 `hit_count[candidate_side]`）并渲染视频。训练期间禁止并发评测（已因并发评测导致一次容器掉线）。
 
 ## 项目状态（2026-10-25 晚）
 

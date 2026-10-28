@@ -21,7 +21,13 @@ except ImportError:
 MATCH = sys.argv[1]
 OUT_DIR = sys.argv[2]
 LABEL = sys.argv[3] if len(sys.argv) > 3 else "H2b (RED) vs RoboStriker (BLUE)"
-XML = "/mnt/workspace/HoloMotion/thirdparties/HoloMotion_assets/holoboxing/arena/boxing.xml"
+XML_CANDIDATES = [
+    os.environ.get("BOXING_ARENA_XML", ""),
+    "thirdparties/HoloMotion_assets/holoboxing/arena/boxing.xml",
+    "/root/hbot/HoloMotion/thirdparties/HoloMotion_assets/holoboxing/arena/boxing.xml",
+    "/mnt/workspace/HoloMotion/thirdparties/HoloMotion_assets/holoboxing/arena/boxing.xml",
+]
+XML = next((p for p in XML_CANDIDATES if p and os.path.exists(p)), XML_CANDIDATES[1])
 
 m = json.load(open(MATCH))
 frames = m["frames"]
@@ -56,8 +62,13 @@ def font(size):
 f_small, f_big = font(22), font(72)
 os.makedirs(OUT_DIR, exist_ok=True)
 n = len(frames)
+out_i = 0
+
+STRIDE = max(1, int(os.environ.get("RENDER_STRIDE", "1")))
 
 for i, fr in enumerate(frames):
+    if i % STRIDE and i < n - 60:
+        continue
     for k, adr in enumerate(free):
         data.qpos[adr:adr + 3] = fr["root_pos"][k]
         data.qpos[adr + 3:adr + 7] = fr["root_quat"][k]          # wxyz，直接写
@@ -73,15 +84,20 @@ for i, fr in enumerate(frames):
     img = Image.fromarray(renderer.render())
     d = ImageDraw.Draw(img)
     sc = fr.get("score", [0, 0])
+    if winner is not None and i >= n - 60 and summary.get("final_score"):
+        sc = summary["final_score"]
     d.text((16, 12), f"{LABEL}   t={i / 50:5.2f}s   RED {sc[0]} : {sc[1]} BLUE",
            font=f_small, fill=(255, 255, 0))
     if winner is not None and i >= n - 60:
         side = "RED WINS" if winner == 0 else "BLUE WINS"
-        d.text((470, 320), f"K.O.  {side}", font=f_big,
+        reason = (end_reason or "").upper()
+        prefix = "K.O.  " if reason == "KO" else ("TIME  " if reason == "TIME" else "")
+        d.text((300, 600), f"{prefix}{side}", font=f_big,
                fill=(255, 70, 70) if winner == 0 else (80, 140, 255))
     elif winner is None and i >= n - 60 and end_reason:
         d.text((520, 320), end_reason, font=f_big, fill=(255, 255, 0))
-    img.save(f"{OUT_DIR}/f{i:05d}.png")
+    img.save(f"{OUT_DIR}/f{out_i:05d}.png")
+    out_i += 1
 
 renderer.close()
-print("DONE frames:", n)
+print("DONE frames:", n, "rendered:", out_i, "stride:", STRIDE)
