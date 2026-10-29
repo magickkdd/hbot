@@ -1,6 +1,10 @@
 #!/bin/bash
 # 快速评测：导出 BR/AVG，各打 1 局（side0），只看命中
 set -u
+# 硬门禁：训练在跑时绝不允许评测（mujoco-warp 编译曾把容器压挂）
+if pgrep -f "training[.]train_rl" >/dev/null 2>&1; then
+  echo "TRAINING_RUNNING_ABORT"; exit 1
+fi
 REPO=/root/hbot/HoloMotion; cd "$REPO" || exit 1
 export HOLOBOXING_ASSETS=$REPO/holoboxing/assets
 export HOLOBOXING_LOWER=$REPO/models/holomotion-v2
